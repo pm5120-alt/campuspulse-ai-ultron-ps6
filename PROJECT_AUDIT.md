@@ -4,7 +4,7 @@ Audit target: the supplied `CampusIQ-main.zip` source. This audit distinguishes 
 
 ## Original repository
 
-- MIT-licensed CampusIQ by Omprakash Behera (copyright notice in `LICENSE`). Preserve that notice and attribution in redistributed copies.
+- CampusIQ by Omprakash Behera is MIT-licensed; its copyright and permission notice for inherited portions is preserved in `THIRD_PARTY_NOTICES.md`. Preserve that notice and attribution in redistributed copies. This repository does not declare one project-wide license for Team ULTRON additions.
 - Frontend: Next.js 16 / React 19 / TypeScript / Tailwind 4, under `application/`.
 - Backend: FastAPI, pandas, scikit-learn, Prophet/XGBoost optional model imports under `ML/`.
 - CSV synthetic telemetry and serialized model artifacts are present in `ML/data/generated/` and `ML/trained_models/`.

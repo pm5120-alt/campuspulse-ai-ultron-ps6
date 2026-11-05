@@ -55,4 +55,4 @@ These checks establish local unit/API behavior and a production frontend build. 
 
 **ULTRON** - Priyanshu Mishra and Argha Atta, SRM Institute of Science and Technology, Kattankulathur (SRM KTR).
 
-This submission adapts the MIT-licensed [CampusIQ project by Omprakash Behera](https://github.com/CodeByPrakash/CampusIQ). The upstream copyright and license are retained in [LICENSE](LICENSE). The team's contribution boundary is documented in [TEAM.md](TEAM.md); inherited dashboard code, datasets, and model assets remain credited to the original author.
+This submission adapts the [CampusIQ project by Omprakash Behera](https://github.com/CodeByPrakash/CampusIQ). The original upstream MIT notice is preserved for the inherited CampusIQ portions in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). This repository does not declare a project-wide license for Team ULTRON's additions. See [TEAM.md](TEAM.md) for the contribution boundary; inherited dashboard code, datasets, and model assets remain credited to the original author.
