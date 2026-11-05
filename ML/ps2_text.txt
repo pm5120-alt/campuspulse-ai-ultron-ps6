@@ -1,0 +1,100 @@
+🔎 The Problem
+Government and institutional facilities generate large amounts of data on energy, water, waste, air quality, safety, traffic, and asset usage. 
+However, this data is often fragmented across different sources, making it difficult to analyze and turn into timely decisions. 
+🎯 The Challenge
+Administrators need a smart system that can:
+📊 Understand what is happening
+🚨 Detect what looks abnormal
+🔮 Predict what may happen next
+💡 Recommend what action to consider
+for the MVP, taking an engineering college/campus as the primary example is a very good strategy. You do not need to build separate 
+complete solutions for a college, hospital, municipality, industry, etc.
+The smarter approach is:
+Build deeply for ONE facility → design the architecture to be configurable → demonstrate how the same engine can expand to other facility 
+types.
+Proposed Solution
+An AI-powered Facility Intelligence Dashboard that converts fragmented facility data into actionable insights for administrators.
+🎯 Main Objective
+The ultimate objective is:
+Turn facility data into useful, actionable decision-support information for administrators.
+Not just:
+Data → Graph
+but:
+Data → Analysis → Problem Detection → Prediction → Recommendation → Decision
+🔴 MANDATORY / CORE FEATURES
+1.Data ingestion
+ → Accept open, synthetic, or sensor-style data.
+2.Trend visualization
+ → Show how facility conditions/data change over time.
+3.Anomaly detection
+ → Identify unusual or abnormal patterns.
+4.Short-term forecasting
+ → Predict upcoming changes.
+5.Plain-language recommendations
+ → Explain findings in a way administrators can understand.
+6.AI-generated insights
+ → Convert analyzed data into meaningful insights.
+7.Action recommendations
+ → Suggest practical actions administrators can consider.
+🔴 CORE REQUIREMENT 8 — Scenario Simulation
+The PS says a strong prototype should combine visualization with:
+“scenario simulation”. 
+Simple meaning
+Allow the administrator to ask:
+"What if we change something?"
+🔴 CORE REQUIREMENT 9 — Configurable / Adaptable Facility
+The PS says the solution should be adaptable to:
+Hospitals
+Colleges
+Company campuses
+Public-sector units
+Industrial estates
+Municipal facilities
+Large mixed-use institutional zones
+🔴 CORE REQUIREMENT 10 — Role-Based Views
+The guidelines say solutions:
+“should support role-based views for administrators, operations teams, and sustainability officers.”
+For example:
+👨‍💼 Administrator
+Overall facility health
+Major risks
+Priority actions
+👷 Operations Team
+Maintenance
+Equipment
+Waste
+Water
+🌱 Sustainability Officer
+Energy
+Water
+Waste
+Emissions
+🟡 Example Modules — NOT ALL MANDATORY
+This part is very important.
+The PS says:
+“Example modules may include...” 
+Therefore, these are examples of areas you can choose, not a requirement to build all of them.
+Examples listed by the PS:
+Module
+What it could do
+🌫️ Air-quality monitoring
+Monitor/analyze air quality
+🗑️ Waste-bin overflow prediction
+Predict when bins may overflow
+⚡ Energy optimization
+Find inefficient energy usage
+💧 Water-use alerts
+Detect unusual water consumption
+🚗 Traffic/parking hotspots
+Identify congested areas
+🏢 Equipment utilization
+Analyze equipment usage
+🦺 Safety incident trends
+Analyze safety patterns
+🌱 Sustainability scorecards
+Summarize sustainability performance
+So:
+You DON'T need all 8.
+For a hackathon, you could select:
+⚡ Energy + 💧 Water + 🗑️ Waste
+and implement them well.

@@ -1,0 +1,46 @@
+ 
+ 
+2. Sustainable Facility and Estate Intelligence Dashboard for India 
+ 
+Problem Statement:  
+Create an AI-powered decision dashboard for government-run and institution-run facilities across India that 
+helps analyze sustainability, safety, and operations challenges such as air quality, waste management, water 
+usage, energy consumption, traƯic ﬂow, asset utilization, emissions, and climate resilience. The solution 
+should be adaptable to hospitals, colleges, company campuses, public-sector units, industrial estates, 
+municipal facilities, and large mixed-use institutional zones. 
+Description - Expected Features:  
+The dashboard should ingest open, synthetic, or sensor-style data; visualize trends; detect anomalies; 
+forecast short-term changes; and generate plain-language recommendations for administrators. Example 
+modules may include air-quality monitoring, waste-bin overﬂow prediction, energy-usage optimization, 
+water-use alerts, traƯic or parking hotspot analysis, equipment utilization, safety incident trend monitoring, 
+and sustainability scorecards. A strong prototype should combine data visualization with AI-generated 
+insights, scenario simulation, and action recommendations such as changing collection routes, sending 
+advisories, adjusting energy schedules, identifying pollution hotspots, optimizing facility maintenance, or 
+prioritizing inspection zones. Teams may frame the problem for a government hospital, engineering college, 
+municipal campus, industrial estate, company campus, or public-sector manufacturing facility. 
+Evaluation Criteria / Weightage:  
+Sustainability and operations relevance across Indian facilities
+20%
+Data engineering and visualization
+20%
+AI/ML modeling, forecasting, or anomaly detection
+20%
+Actionability of recommendations
+15%
+Usability for facility administrators
+10%
+Explainability and assumptions
+10%
+Demo Quality
+5%
+ 
+Guidelines:  
+Prefer Python, pandas, scikit-learn, Prophet or other forecasting libraries, Streamlit, Power BI-style 
+dashboards, geospatial libraries, map APIs, IoT simulators, and GenAI-based insight generation. Teams 
+should use public datasets, synthetic IoT feeds, or manually prepared sample data. Include assumptions 
+behind forecasts and recommendations. If using environmental, safety, or health-impact data, avoid 
+overstating conclusions; present outputs as decision-support insights, not oƯicial measurements. Solutions 
+should be conﬁgurable for diƯerent facility types and should support role-based views for administrators, 
+operations teams, and sustainability oƯicers. 
+ 
+ 

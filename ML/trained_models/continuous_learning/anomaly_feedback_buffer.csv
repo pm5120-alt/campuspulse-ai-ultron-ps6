@@ -1,0 +1,11 @@
+logged_at,domain,entity_id,timestamp,is_true_anomaly,operator_notes,feat_kwh,feat_hour,feat_records,feat_mean_metric
+2026-10-04T01:48:17.633691,Energy,academic_block,2026-10-04T10:00:00,1,Verified chiller setpoint overrun,1680.0,14.0,,
+2026-10-04T01:49:45.380773,Energy,academic_block,2026-10-04T10:00:00,1,Verified chiller setpoint overrun,1680.0,14.0,,
+2026-10-04T02:29:51.803845,Energy,academic_block,2026-10-04T10:00:00,1,Verified chiller setpoint overrun,1680.0,14.0,,
+2026-10-04T20:41:57.753024,energy,insight_energy_01,2026-10-04T15:11:57.745Z,1,Confirmed by facility engineer,,,,
+2026-10-04T20:47:49.163258,energy,insight_energy_01,2026-10-04T15:17:49.161Z,1,Confirmed by facility engineer,,,,
+2026-10-04T21:15:02.299559,energy,stream_batch_engineering_college,2026-10-04T21:15:02.299559,0,Direct Energy View Sync & Learn Trigger,,,0.0,24850.0
+2026-11-05T15:24:12.589951,energy,stream_batch_engineering_college,2026-11-05T15:24:12.589939,0,Direct Energy View Sync & Learn Trigger,,,0.0,24850.0
+2026-11-05T15:28:35.669498,energy,stream_batch_engineering_college,2026-11-05T15:28:35.669464,0,CSV Telemetry ingestion: CampusPulse-demo-energy.csv (9 rows),,,9.0,2971.4
+2026-11-05T15:28:51.409603,energy,stream_batch_engineering_college,2026-11-05T15:28:51.409590,0,CSV Telemetry ingestion: CampusPulse-demo-energy.csv (9 rows),,,9.0,2971.4
+2026-11-06T01:43:05.950999,energy,stream_batch_engineering_college,2026-11-06T01:43:05.950252,0,CSV telemetry upload,,,1.0,172.6

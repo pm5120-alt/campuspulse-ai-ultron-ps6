@@ -1,0 +1,3 @@
+timestamp,entity_id,kwh,kw_demand,power_factor,voltage_v,temperature_c
+2026-11-05T10:00:00Z,codex_arrival_demo_20261106,420,60,0.98,415,25
+2026-11-05T10:00:00Z,codex_arrival_demo_20261106,460,65,0.98,415,26

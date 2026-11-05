@@ -1,0 +1,18 @@
+.next/
+node_modules/
+.venv/
+.env
+.env.**
+.env*
+__pycache__/
+*.py[cod]
+*.sqlite3
+CampusIQ-PS6.zip
+
+# Local design references and prior submission exports are not runtime source.
+/PS/
+/References/
+/UI_Reference/
+/submission/
+application/.claude/
+application/.agents/
