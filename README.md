@@ -45,11 +45,16 @@ npm run dev
 
 Open `http://localhost:3000/ps6`. The frontend uses `NEXT_PUBLIC_API_URL` when set and otherwise targets `http://localhost:8000`.
 
+## Public demo
+
+- [Main dashboard](https://campuspulse-ai-web.onrender.com/) - on a fresh browser, use the on-screen demo sign-in once. The Map, Energy, and AI Insights views are in the dashboard navigation.
+- [PS6 workflow](https://campuspulse-ai-web.onrender.com/ps6) - the separate occupancy-aware energy workflow for the competition brief.
+
 ## Verification (2026-11-06)
 
 Verified locally from the repository root: `python -m unittest ML.test_telemetry_ingestion ML.test_telemetry_api ML.test_ps6_service ML.test_ps6_api` passed all 60 tests. From `application/`, `npm run lint` exited successfully and `npm run build` completed, generating `/`, `/_not-found`, and `/ps6`. The backend suite emitted a Plotly import warning and FastAPI/Pydantic deprecation notices; these did not fail the checks.
 
-These checks establish local unit/API behavior and a production frontend build. They do not establish a public deployment, live sensors, real campus control, forecast accuracy, or field-validated savings. See [TESTING_REPORT.md](TESTING_REPORT.md).
+These checks establish local unit/API behavior and a production frontend build. The public dashboard and PS6 routes were also smoke-checked against the deployed API. This does not establish live sensors, real campus control, forecast accuracy, or field-validated savings. See [TESTING_REPORT.md](TESTING_REPORT.md).
 
 ## Team and attribution
 

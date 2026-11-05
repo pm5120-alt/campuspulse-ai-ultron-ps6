@@ -220,15 +220,8 @@ export default function SatelliteMapLeaflet({
           maxZoom={19}
         />
 
-        {/* Optional overlay labels for satellite imagery */}
-        {mapType === "satellite" && (
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png"
-            attribution=""
-            maxZoom={19}
-            opacity={0.85}
-          />
-        )}
+        {/* Keep the imagery unobscured: CARTO's public labels endpoint now returns
+            opaque "API KEY REQUIRED" tiles in deployed browsers. */}
 
         {/* Render GPS Building Markers */}
         {buildings.map((b: BuildingLocation) => (
