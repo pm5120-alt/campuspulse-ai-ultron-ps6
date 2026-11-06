@@ -329,7 +329,7 @@ export default function ConstraintsDemoPage() {
               </div>
             )}
             {conflictError && <p role="alert" className="mt-4 whitespace-pre-wrap rounded-xl border border-rose-300/20 bg-rose-400/10 p-3 text-sm text-rose-200">{conflictError}</p>}
-            <p className="mt-4 text-xs leading-5 text-slate-500">The API retains the incumbent reading and returns conflict details for review. This is synthetic demo data in the running API’s in-memory telemetry store.</p>
+            <p className="mt-4 text-xs leading-5 text-slate-500">{resolvedConflict ? "The reviewer’s decision and reason are recorded; the conflict is no longer pending." : "The API retains the incumbent reading and returns conflict details for review."} This is synthetic demo data in the running API’s in-memory telemetry store.</p>
           </section>
 
           <section className="rounded-3xl border border-sky-300/20 bg-[#111722] p-5 shadow-xl shadow-black/20 sm:p-7">
