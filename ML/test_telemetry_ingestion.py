@@ -102,22 +102,26 @@ class ArrivalMergeTests(unittest.TestCase):
         same_instant = record_identity("engineering_college", "energy", self.record("2026-11-04T15:30:00+05:30", 2))
         self.assertEqual(same_instant, identity)
 
-    def test_last_duplicate_in_batch_wins_and_counts(self):
+    def test_conflicting_duplicate_in_batch_keeps_first_and_reports_conflict(self):
         import pandas as pd
         merged, counts = merge_batch(pd.DataFrame(), [self.record("2026-11-04T10:00:00Z", 3), self.record("2026-11-04T10:00:00Z", 8)], "engineering_college", "energy", "records")
-        self.assertEqual(float(merged.iloc[-1]["kwh"]), 8)
-        self.assertEqual(counts, {"accepted": 1, "rejected": 0, "duplicates": 1})
-        self.assertEqual(merged.iloc[-1]["_arrival_row"], 2)
+        self.assertEqual(float(merged.iloc[-1]["kwh"]), 3)
+        self.assertEqual(counts["accepted"], 1)
+        self.assertEqual(counts["duplicates"], 1)
+        self.assertEqual(counts["conflicts"][0]["fields"], ["kwh"])
+        self.assertEqual(counts["conflicts"][0]["resolution"], "held_for_review")
+        self.assertEqual(merged.iloc[-1]["_arrival_row"], 1)
 
-    def test_new_arrival_wins_even_when_event_time_is_stale(self):
+    def test_conflicting_late_arrival_does_not_replace_stale_incumbent(self):
         import pandas as pd
         prior, _ = merge_batch(pd.DataFrame(), [self.record("2026-11-04T10:00:00Z", 9)], "engineering_college", "energy", "csv")
         stale_arrival, counts = merge_batch(prior, [self.record("2026-11-04T10:00:00Z", 2)], "engineering_college", "energy", "records")
         self.assertEqual(len(stale_arrival), 1)
-        self.assertEqual(float(stale_arrival.iloc[0]["kwh"]), 2)
-        self.assertGreater(stale_arrival.iloc[0]["_arrival_order"], prior.iloc[0]["_arrival_order"])
-        self.assertEqual(stale_arrival.iloc[0]["_arrival_source"], "records")
+        self.assertEqual(float(stale_arrival.iloc[0]["kwh"]), 9)
+        self.assertEqual(stale_arrival.iloc[0]["_arrival_order"], prior.iloc[0]["_arrival_order"])
+        self.assertEqual(stale_arrival.iloc[0]["_arrival_source"], "csv")
         self.assertEqual(counts["duplicates"], 1)
+        self.assertEqual(counts["conflicts"][0]["resolution"], "held_for_review")
 
     def test_rejected_record_cannot_partially_merge(self):
         import pandas as pd
@@ -127,12 +131,13 @@ class ArrivalMergeTests(unittest.TestCase):
             validate_records([self.record("2026-11-04T10:00:00Z", 5), self.record("bad", 4)], "energy", NOW)
         pd.testing.assert_frame_equal(stored, before)
 
-    def test_incoming_record_replaces_matching_legacy_stored_row(self):
+    def test_conflicting_incoming_record_keeps_matching_legacy_stored_row(self):
         import pandas as pd
         legacy = pd.DataFrame([{"timestamp": "2026-11-04T10:00:00Z", "building_id": "main", "kwh": 4}])
         merged, _ = merge_batch(legacy, [self.record("2026-11-04T10:00:00Z", 11)], "engineering_college", "energy", "records")
         self.assertEqual(len(merged), 1)
-        self.assertEqual(float(merged.iloc[0]["kwh"]), 11)
+        self.assertEqual(float(merged.iloc[0]["kwh"]), 4)
+        self.assertEqual(counts["conflicts"][0]["fields"], ["kwh"])
 
     def test_legacy_rows_without_identity_are_preserved(self):
         import pandas as pd

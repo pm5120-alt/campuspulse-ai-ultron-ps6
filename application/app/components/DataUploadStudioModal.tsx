@@ -513,7 +513,7 @@ export default function DataUploadStudioModal({
                             {learningResult.accepted ?? 0} accepted
                           </span>
                         </div>
-                        <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">{learningResult.duplicates ?? 0} duplicate rows resolved by arrival order. {learningResult.retraining_status === "completed" ? `Models: ${(learningResult.retrained_models || []).join(", ")}.` : "No retraining success is reported for this batch."}</p>
+                        <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300">{learningResult.duplicates ?? 0} duplicate rows detected; conflicting readings are held for review instead of replacing stored values. {learningResult.retraining_status === "completed" ? `Models: ${(learningResult.retrained_models || []).join(", ")}.` : "No retraining success is reported for this batch."}</p>
                       </div>
                     )}
 

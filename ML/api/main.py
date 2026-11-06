@@ -674,7 +674,7 @@ def sync_and_learn_telemetry(req: SyncAndLearnRequest):
             "errors": exc.errors[:100], "accepted": 0, "rejected": rejected, "duplicates": 0,
         }) from None
 
-    counts = {"accepted": 0, "rejected": 0, "duplicates": 0}
+    counts = {"accepted": 0, "rejected": 0, "duplicates": 0, "conflicts": []}
     if parsed_records:
         with TELEMETRY_MERGE_LOCK:
             merged, counts = merge_batch(data_store[req.domain], parsed_records, facility_type, req.domain, upload_source)
@@ -738,6 +738,7 @@ def sync_and_learn_telemetry(req: SyncAndLearnRequest):
         "accepted": counts["accepted"],
         "rejected": counts["rejected"],
         "duplicates": counts["duplicates"],
+        "conflicts": counts.get("conflicts", []),
         "records_ingested": records_count,
         "model_version": model_version,
         "retrained_models": retrained_modules,

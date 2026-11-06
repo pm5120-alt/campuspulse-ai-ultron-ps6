@@ -241,15 +241,15 @@ export default function ConstraintsDemoPage() {
               <div className="rounded-2xl bg-orange-400/10 p-3 text-orange-300"><ArrowDownUp className="h-5 w-5" /></div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange-300">Constraint 2</p>
-                <h2 className="mt-1 text-xl font-bold">Newest arrival wins</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-300">Two sources send different readings for the same meter and event time. The later request replaces the earlier one.</p>
+                <h2 className="mt-1 text-xl font-bold">Flag conflicts for review</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-300">Two sources send different readings for the same meter and event time. Arrival order is recorded, but does not decide which reading is true.</p>
               </div>
             </div>
 
             <div className="mb-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm">
               <p><span className="text-slate-400">Same record key:</span> energy meter, same event timestamp</p>
               <p className="mt-1"><span className="text-slate-400">Event timestamp:</span> <code className="text-amber-200">{STALE_EVENT_TIME}</code> <span className="text-slate-500">(stale sample)</span></p>
-              <p className="mt-1 text-xs text-slate-400">Arrival time is assigned by the API when each request reaches it.</p>
+              <p className="mt-1 text-xs text-slate-400">The API records arrival time and marks this event timestamp as stale. A later arrival alone cannot resolve the disagreement.</p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -290,19 +290,19 @@ export default function ConstraintsDemoPage() {
                   <div key={arrival.source} className={`grid grid-cols-3 items-center border-t border-white/10 px-4 py-3 text-sm ${arrival.source === "Source B" && sourceB ? "bg-emerald-400/10" : ""}`}>
                     <span>{index + 1} · {arrival.source}</span>
                     <span className="font-bold">{arrival.kwh} kWh</span>
-                    <span className="text-xs text-slate-300">{arrival.reply.status} · {String(responseDetail(arrival.reply.body).duplicates ?? 0)} duplicate</span>
+                    <span className="text-xs text-slate-300">{arrival.reply.status} · {String(responseDetail(arrival.reply.body).duplicates ?? 0)} duplicate · {String(responseDetail(arrival.reply.body).accepted ?? 0)} accepted</span>
                   </div>
                 ))}
                 {sourceB && (
-                  <div className="flex items-start gap-2 border-t border-emerald-300/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                    <p>Source B arrived later and replaced the same-key record. Current demo winner: <strong>{sourceB.kwh} kWh</strong>.</p>
+                  <div className="flex items-start gap-2 border-t border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p>Conflict detected in <strong>{String((responseDetail(sourceB.reply.body).conflicts as Array<{ fields?: string[] }> | undefined)?.[0]?.fields?.join(", ") ?? "telemetry values")}</strong>. Source A remains stored at <strong>{sourceA?.kwh} kWh</strong>; Source B&apos;s <strong>{sourceB.kwh} kWh</strong> reading was held for review. Arrival order did not decide the truth.</p>
                   </div>
                 )}
               </div>
             )}
             {conflictError && <p role="alert" className="mt-4 whitespace-pre-wrap rounded-xl border border-rose-300/20 bg-rose-400/10 p-3 text-sm text-rose-200">{conflictError}</p>}
-            <p className="mt-4 text-xs leading-5 text-slate-500">The app records arrival order separately from event time. This is a demo record in the running API’s in-memory telemetry store.</p>
+            <p className="mt-4 text-xs leading-5 text-slate-500">The API retains the incumbent reading and returns conflict details for review. This is synthetic demo data in the running API’s in-memory telemetry store.</p>
           </section>
 
           <section className="rounded-3xl border border-sky-300/20 bg-[#111722] p-5 shadow-xl shadow-black/20 sm:p-7">

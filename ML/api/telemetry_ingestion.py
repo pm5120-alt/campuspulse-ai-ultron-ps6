@@ -224,7 +224,7 @@ def record_identity(facility_type: str, domain: str, record: dict[str, Any]) -> 
 
 
 def merge_batch(existing: pd.DataFrame, records: list[dict[str, Any]], facility_type: str, domain: str, source: str) -> tuple[pd.DataFrame, dict[str, int]]:
-    """Copy-on-write merge. Higher arrival order wins; later batch row wins ties."""
+    """Merge non-conflicting records; retain the incumbent and report value conflicts."""
     import pandas as pd
 
     now = datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
@@ -260,11 +260,27 @@ def merge_batch(existing: pd.DataFrame, records: list[dict[str, Any]], facility_
     retained = old.drop(index=[i for i, identity in enumerate(identity_keys) if identity is not None and latest_existing.get(identity) != i])
     start_order = max([-1, *[int(v) for v in old["_arrival_order"].tolist()]]) + 1
     winners: dict[str, tuple[int, dict[str, Any]]] = {}
+    conflicts: list[dict[str, Any]] = []
     duplicate_count = 0
     for batch_index, record in enumerate(records, start=1):
         identity = record_identity(facility_type, domain, record)
+        previous = winners.get(identity)
+        existing_index = latest_existing.get(identity)
+        incumbent = winners[identity][1] if previous else (old.iloc[existing_index].to_dict() if existing_index is not None else None)
+        if previous or existing_index is not None:
+            duplicate_count += 1
+            changed = [field for field in set(schema["numeric"]) | schema["text"]
+                       if field in record and field in incumbent and pd.notna(incumbent[field])
+                       and record[field] != incumbent[field]]
+            if changed:
+                conflicts.append({
+                    "entity_id": record.get(schema["id"]), "timestamp": record.get("timestamp"),
+                    "fields": sorted(changed), "retained_source": incumbent.get("_arrival_source", "earlier batch row"),
+                    "incoming_source": source, "resolution": "held_for_review",
+                })
+            # Keep the first observed record; arrival time alone is not evidence of truth.
+            continue
         winners[identity] = (batch_index, record)
-    duplicate_count = len(records) - len(winners) + sum(identity in latest_existing for identity in winners)
     additions: list[dict[str, Any]] = []
     for identity, (batch_index, record) in winners.items():
         item = dict(record)
@@ -274,9 +290,9 @@ def merge_batch(existing: pd.DataFrame, records: list[dict[str, Any]], facility_
                      "_arrival_at": now, "_arrival_source": source, "_arrival_row": batch_index})
         additions.append(item)
     combined = pd.concat([retained, pd.DataFrame(additions)], ignore_index=True, sort=False)
-    # Newly arrived rows replace matching stored rows; stable sort preserves display chronology.
-    identified = combined[combined["_record_identity"].notna()].drop_duplicates("_record_identity", keep="last")
+    # Preserve the incumbent for duplicate identities; stable order keeps its provenance.
+    identified = combined[combined["_record_identity"].notna()].drop_duplicates("_record_identity", keep="first")
     unidentified = combined[combined["_record_identity"].isna()]
     combined = pd.concat([unidentified, identified], ignore_index=True, sort=False)
     combined = combined.sort_values("_arrival_order", kind="stable").tail(500).reset_index(drop=True)
-    return combined, {"accepted": len(winners), "rejected": 0, "duplicates": duplicate_count}
+    return combined, {"accepted": len(winners), "rejected": 0, "duplicates": duplicate_count, "conflicts": conflicts}
