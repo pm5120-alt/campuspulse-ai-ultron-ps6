@@ -6,7 +6,9 @@
 |---|---|---|
 | Repository root | `python -m unittest ML.test_telemetry_ingestion ML.test_telemetry_api ML.test_ps6_service ML.test_ps6_api` | Passed: 60 tests, 0 failures. |
 | `application/` | `npm run lint` | Passed, exit code 0. |
-| `application/` | `npm run build` | Passed. Next.js generated `/`, `/_not-found`, and `/ps6`. |
+| `application/` | `npm run build` | Passed. Next.js generated `/`, `/_not-found`, `/constraints`, and `/ps6`. |
+
+The frontend lint and build were rerun after adding `/constraints`. In a local browser with the local API running, the Constraint 2 flow returned HTTP 200 for both arrivals and reported one duplicate on the second request; the page showed Source B as the winner. The Constraint 4 invalid-timestamp flow returned HTTP 422 with `accepted: 0` and `rejected: 2`. These were browser checks against the local app, not the public deployment.
 
 The Python suite emitted an optional Plotly import warning and FastAPI/Pydantic deprecation notices. They did not fail the run. The tests use local fixtures and clients; they are not real sensor or live-hosting tests.
 

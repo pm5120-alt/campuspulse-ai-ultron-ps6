@@ -1,32 +1,12 @@
-# CAMPUSPULSE AI
+# CampusPulse AI
 
-### Occupancy-aware energy intelligence for campus facilities
+CampusPulse AI is our PS6 prototype for exploring how campus room schedules and energy use could work together. The project includes a campus dashboard inherited from CampusIQ and a separate occupancy-aware energy demo at `/ps6`.
 
-**Team ULTRON | PS6 - The Sleeping Campus**
+The PS6 page uses simulated rooms and readings. You can add timetable entries, review rule-based flags and estimated savings, approve or reject a recommendation, and record a simulated action in the audit history. Nothing here connects to or controls real building equipment, and the savings figures are examples rather than measured results.
 
-CAMPUSPULSE AI is a campus operations prototype that compares simulated room occupancy and energy readings with timetable entries. It presents reviewable energy recommendations with an approval step and an audit trail.
+## Run it locally
 
-> **Demo boundary:** room readings and actions are simulated. Savings are estimates based on stated assumptions. The software does not connect to or control building equipment.
-
-## PS6 capabilities
-
-- Room-level simulated occupancy and energy readings across building, floor, and room inventory.
-- Manually entered events/timetable with expected occupancy and a room comparison view.
-- Rule-based unusual-load flags and schedule-scaled peak estimates over simulated readings.
-- Reviewable savings estimates with bounded operating settings and assumptions shown.
-- Fire panels and server/network racks are excluded from proposed control actions.
-- Manual approve/reject gate, simulated execution, and an application-level audit history.
-
-See [FEATURES.md](FEATURES.md) for the implementation map and limitations. The workflow is in `ML/api/ps6_service.py`, routes are in `ML/api/main.py`, and the interface is in `application/app/ps6/`.
-
-## Competition constraints
-
-- **Newest arrival wins:** records use the identity `[facility, domain, normalized entity ID, canonical UTC event timestamp]`. Arrival sequence is tracked separately; the last batch row wins a tie. See [TELEMETRY_INGESTION.md](TELEMETRY_INGESTION.md).
-- **Hostile input:** CSV and JSON are validated against domain schemas, request and row limits, timestamp policy, identifier rules, finite numeric types and bounds. Invalid batches fail atomically with actionable errors.
-
-## Run locally
-
-Start the API from the repository root:
+You’ll need Python and Node.js installed. Start the API from the repository root:
 
 ```powershell
 python -m venv .venv
@@ -35,7 +15,7 @@ python -m pip install -r ML/requirements.txt
 python -m uvicorn ML.api.main:app --reload --port 8000
 ```
 
-In another terminal, start the web application:
+In a second terminal, start the web app:
 
 ```powershell
 cd application
@@ -43,21 +23,35 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000/ps6`. The frontend uses `NEXT_PUBLIC_API_URL` when set and otherwise targets `http://localhost:8000`.
+Open [http://localhost:3000/ps6](http://localhost:3000/ps6) for the campus workflow or [http://localhost:3000/constraints](http://localhost:3000/constraints) for the two live constraint demos. The API defaults to `http://localhost:8000`; set `NEXT_PUBLIC_API_URL` if it runs somewhere else. API documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-## Public demo
+## What’s in the repo
 
-- [Main dashboard](https://campuspulse-ai-web.onrender.com/) - on a fresh browser, use the on-screen demo sign-in once. The Map, Energy, and AI Insights views are in the dashboard navigation.
-- [PS6 workflow](https://campuspulse-ai-web.onrender.com/ps6) - the separate occupancy-aware energy workflow for the competition brief.
+- `application/` — the Next.js interface, including the inherited campus dashboard and the PS6 page.
+- `ML/api/` — the FastAPI routes and PS6 workflow service.
+- `ML/data/` and `ML/trained_models/` — sample data and model assets from the upstream project.
+- `FEATURES.md` — a short guide to what is implemented and what remains a demo assumption.
+- `SETUP_GUIDE.md`, `ARCHITECTURE.md`, and `TELEMETRY_INGESTION.md` — setup and implementation details.
+- `TESTING_REPORT.md` — the latest recorded local checks and their limits.
 
-## Verification (2026-11-06)
+The dashboard includes inherited demo data and model code. Its presence does not mean every dashboard metric is live or that the models have been validated for a real campus. The PS6 workflow is intentionally labeled as simulated.
 
-Verified locally from the repository root: `python -m unittest ML.test_telemetry_ingestion ML.test_telemetry_api ML.test_ps6_service ML.test_ps6_api` passed all 60 tests. From `application/`, `npm run lint` exited successfully and `npm run build` completed, generating `/`, `/_not-found`, and `/ps6`. The backend suite emitted a Plotly import warning and FastAPI/Pydantic deprecation notices; these did not fail the checks.
+## Checks
 
-These checks establish local unit/API behavior and a production frontend build. The public dashboard and PS6 routes were also smoke-checked against the deployed API. This does not establish live sensors, real campus control, forecast accuracy, or field-validated savings. See [TESTING_REPORT.md](TESTING_REPORT.md).
+The latest recorded local checks are in [TESTING_REPORT.md](TESTING_REPORT.md). To run them again:
 
-## Team and attribution
+```powershell
+python -m unittest ML.test_telemetry_ingestion ML.test_telemetry_api ML.test_ps6_service ML.test_ps6_api
+```
 
-**ULTRON** - Priyanshu Mishra and Argha Atta, SRM Institute of Science and Technology, Kattankulathur (SRM KTR).
+```powershell
+cd application
+npm run lint
+npm run build
+```
 
-This submission adapts the [CampusIQ project by Omprakash Behera](https://github.com/CodeByPrakash/CampusIQ). The original upstream MIT notice is preserved for the inherited CampusIQ portions in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). This repository does not declare a project-wide license for Team ULTRON's additions. See [TEAM.md](TEAM.md) for the contribution boundary; inherited dashboard code, datasets, and model assets remain credited to the original author.
+These checks cover local code and a production frontend build. They do not verify live sensors, equipment control, model accuracy, or measured energy savings.
+
+## Attribution
+
+This project builds on [CampusIQ by Omprakash Behera](https://github.com/CodeByPrakash/CampusIQ). The upstream MIT notice for inherited portions is kept in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). There is no project-wide license for the team’s additions. See [TEAM.md](TEAM.md) for the contribution boundary.

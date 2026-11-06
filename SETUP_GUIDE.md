@@ -27,15 +27,21 @@ npm run dev        # http://localhost:3000   → PS6 demo at http://localhost:30
 
 The API URL defaults to `http://localhost:8000`; override with `NEXT_PUBLIC_API_URL`. `/ps6` is not linked from the inherited sidebar.
 
-## Tests
+## Checks
 
-```bash
-python -m unittest ML.test_ps6_service -v   # 28 tests, stdlib only, temp DB
-python -m unittest ML.test_ps6_api -v       # HTTP tests; need FastAPI installed; temp DB
-python ML/test_api.py                       # legacy API smoke test (writes/deletes one schedule in the REAL demo DB; set CAMPUSPULSE_DB first)
-python -m compileall -q ML && python -m pip check
-cd application && npm run lint && npm run build && npm audit
+The current recorded checks and their scope are in [TESTING_REPORT.md](TESTING_REPORT.md). To rerun the focused backend suite and frontend checks:
+
+```powershell
+python -m unittest ML.test_telemetry_ingestion ML.test_telemetry_api ML.test_ps6_service ML.test_ps6_api
 ```
+
+```powershell
+cd application
+npm run lint
+npm run build
+```
+
+The separate legacy smoke script, `ML/test_api.py`, writes to the configured demo database. If you use it, set `CAMPUSPULSE_DB` to a disposable path first.
 
 ## Recommended demo sequence (open http://localhost:3000/ps6)
 

@@ -1,14 +1,7 @@
-# Team
+# Team ULTRON
 
-Team Name: ULTRON
+CampusPulse AI is our PS6 project, **The Sleeping Campus: Occupancy-Aware Energy Intelligence**.
 
-Project Name: CAMPUSPULSE AI (PS6 — The Sleeping Campus: Occupancy-Aware Energy Intelligence)
+The team is Priyanshu Mishra and Argha Atta.
 
-Members:
-
-1. Priyanshu Mishra
-2. Argha Atta
-
-## Attribution
-
-This project adapts the **CampusIQ** repository by **Omprakash Behera** (upstream: https://github.com/CodeByPrakash/CampusIQ). The upstream MIT copyright and permission notice for the inherited CampusIQ portions is preserved in `THIRD_PARTY_NOTICES.md`. This repository does not declare a project-wide license for Team ULTRON's additions. ULTRON's contribution is limited to the PS6 adaptation: the SQLite-backed simulated workflow in `ML/api/ps6_service.py`, the `/api/v1/ps6/*` routes, the `/ps6` frontend page and typed client, the added tests, and the documentation files. ULTRON does not claim authorship of the original CampusIQ code.
+We built the PS6 room schedule and energy demo on top of [CampusIQ by Omprakash Behera](https://github.com/CodeByPrakash/CampusIQ). The inherited project’s MIT notice remains in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Our additions do not have a project-wide license. The PS6-specific work is described in [FEATURES.md](FEATURES.md).

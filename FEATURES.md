@@ -1,25 +1,36 @@
-# Features and Provenance
+# What the project does
 
-## Retained from CampusIQ (original author: Omprakash Behera, MIT)
+CampusPulse AI combines an inherited CampusIQ dashboard with a smaller PS6 occupancy and energy prototype. This page separates those parts so the demo’s scope is clear.
 
-Next.js multi-sector dashboard, FastAPI service, synthetic CSV generators/data, model classes (Prophet/XGBoost forecasting, Isolation Forest anomaly detection, etc.) and serialized artifacts. Original copyright and license are retained (`LICENSE`). Several inherited dashboard values (KPI cards, chart arrays, insight text, sync/retraining metrics) are fixed demo payloads, not measurements.
+## PS6 demo
 
-## Added for PS6 (ULTRON adaptation)
+| Capability | What is implemented | Current limit |
+| --- | --- | --- |
+| Room readings | Deterministic sample occupancy and energy values for campus rooms. | Simulated data, not a sensor feed. |
+| Timetable | Add, edit, list, remove, and compare manually entered room events. | No calendar-provider integration or automatic occupancy inference. |
+| Load flags | Rule-based flags for selected unusual-load cases and a schedule-scaled peak estimate. | Not a trained forecast, equipment diagnosis, or validated prediction. |
+| Recommendations | Recommendations based on the demo rules, with editable assumptions and bounds. | Savings and tariff values are estimates, not site-calibrated figures. |
+| Equipment exclusions | Fire panels and server/network racks are excluded from proposed actions. | This is a software rule in the demo, not a physical safety interlock. |
+| Review and audit | A named actor can approve or reject a recommendation; approved actions can be simulated and recorded. | The actor name is self-declared. The audit history is application-level, not tamper-proof. |
 
-| Feature | Where | Notes |
-|---|---|---|
-| Simulated room telemetry (building/floor/room) | `PS6Service.rooms`, `GET /api/v1/ps6/rooms` | Deterministic; every record has `data_mode: "SIMULATED"`. Only the first building's F1-R01 is an engineered idle/high-load demo case. |
-| Campus event calendar / timetable create, update, list, delete and compare | `/api/v1/ps6/timetable*` | Manually entered room events include expected occupancy; invalid times, unknown rooms and overlapping events in one room are rejected. There is no third-party calendar sync. |
-| Rule-based unusual-load checks and scheduled peak estimate | `PS6Service.intelligence`, `GET /api/v1/ps6/intelligence` | Empty-room high load and peer-relative high load flags; scheduled load is scaled from simulated readings and event occupancy. Explicitly rule-based, not a trained forecast or equipment diagnosis. |
-| Rule-based recommendation and configurable operating assumptions | `PS6Service.recommendations`, `/api/v1/ps6/settings` | Editable idle threshold, estimated savings fraction, tariff and comfort floor have server-side bounds and audit entries. These are demonstration assumptions, not calibrated site policy. |
-| Equipment protection | same | Fire panels and network/server racks are always excluded from actions; configurable settings cannot disable this invariant. Affected list contains only standard HVAC and LED lighting. |
-| Manual approval / rejection | `POST …/decision` | A named actor is mandatory. Rejected rooms are not re-proposed. |
-| Simulated execution | `POST …/execute-simulation` | Only from `APPROVED`; response states `SIMULATION ONLY`, `measured_savings: false`. |
-| Audit history | `GET /api/v1/ps6/audit` | actor, UTC timestamp, action, previous/new state JSON. Application-level append-only, not tamper-proof. |
-| PS6 demo page | `application/app/ps6/page.tsx`, `app/lib/ps6Api.ts` | Overview, room table, anomaly/peak estimate, editable settings, event timetable, recommendations, approval/simulation and audit. Verified with lint/build and local browser review; open `/ps6` directly. |
+The service is in `ML/api/ps6_service.py`, its routes are in `ML/api/main.py`, and the interface is in `application/app/ps6/`.
 
-## Not implemented / not verified
+## Constraint demonstrations
 
-- No external calendar-provider sync; events are entered in the local campus timetable.
-- No trained peak-demand forecast, held-out evaluation, verified equipment diagnosis, or sensor accuracy claim. The current checks are transparent rules over simulated values.
-- No real sensor feed or BMS integration. API actor labels provide audit attribution but are not authentication or backend RBAC.
+Open `/constraints` in the website for two interactive demos that submit requests to the telemetry API:
+
+- **Constraint 2 — newest arrival wins:** send two conflicting energy readings with the same meter ID and stale event timestamp. They are submitted in sequence; the API reports the second as a duplicate replacement and the page shows its reading as the winner.
+- **Constraint 4 — hostile input:** choose a missing field, invalid timestamp, negative or out-of-range value, unexpected Unicode or field, wrong type, malformed CSV, or malformed JSON. The page sends a batch with one valid row and one invalid row; the API should reject it with HTTP 422 and apply neither row.
+
+These use synthetic demo readings. The telemetry store is in memory and is reset when the API restarts.
+
+## Inherited campus dashboard
+
+The repository also contains the CampusIQ multi-view dashboard, backend, sample datasets, model code, and serialized model assets. Some displayed values are fixed demonstration payloads. The inherited material is credited to its original author; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Not part of this prototype
+
+- Live building sensors, building-management-system connections, or equipment control.
+- External timetable/calendar synchronization.
+- Verified forecast accuracy, anomaly precision, or measured energy savings.
+- Authentication or server-side role enforcement for the actor name.
