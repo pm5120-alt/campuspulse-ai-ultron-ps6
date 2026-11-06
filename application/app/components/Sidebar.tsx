@@ -17,6 +17,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
+  FlaskConical,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -141,6 +142,14 @@ export default function Sidebar({
                     </button>
                   );
                 })}
+                <a
+                  href="/constraints"
+                  onClick={onMobileClose}
+                  className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl font-extrabold transition-all duration-200 text-left text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <FlaskConical className="w-5 h-5 shrink-0 text-cyan-500" />
+                  <span className="flex-1 text-sm">Constraints Demo</span>
+                </a>
               </nav>
             </div>
 
@@ -276,6 +285,16 @@ export default function Sidebar({
               </button>
             );
           })}
+          <a
+            href="/constraints"
+            title={isCollapsed ? "Constraints Demo" : undefined}
+            className={`w-full flex items-center rounded-2xl font-extrabold transition-all duration-200 text-left text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800 group ${
+              isCollapsed ? "justify-center p-3.5" : "gap-3.5 px-4 py-3 text-[14px]"
+            }`}
+          >
+            <FlaskConical className="w-5.5 h-5.5 shrink-0 text-cyan-500" />
+            {!isCollapsed && <span className="flex-1 truncate">Constraints Demo</span>}
+          </a>
         </nav>
       </div>
 
