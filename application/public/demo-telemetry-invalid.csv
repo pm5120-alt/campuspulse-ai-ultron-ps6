@@ -1,0 +1,4 @@
+timestamp,entity_id,kwh
+2026-11-05T09:00:00Z,demo-meter-bad-01,-12
+not-a-date,demo-meter-bad-02,20
+2026-11-05T11:00:00Z,demo-meter-bad-03,

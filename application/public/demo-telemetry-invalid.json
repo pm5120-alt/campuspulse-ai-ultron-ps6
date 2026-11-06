@@ -1,0 +1,5 @@
+[
+  {"timestamp":"2026-11-05T09:00:00Z","entity_id":"demo-json-bad-01","kwh":-5},
+  {"timestamp":"bad-time","entity_id":"demo-json-bad-02","kwh":20},
+  {"timestamp":"2026-11-05T11:00:00Z","entity_id":"demo-json-bad-03","kwh":"twelve"}
+]

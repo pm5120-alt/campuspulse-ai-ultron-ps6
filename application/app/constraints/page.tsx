@@ -156,6 +156,7 @@ export default function ConstraintsDemoPage() {
   const [attackBusy, setAttackBusy] = useState(false);
   const [attackReply, setAttackReply] = useState<ApiReply | null>(null);
   const [attackError, setAttackError] = useState("");
+  const [datasetFile, setDatasetFile] = useState<File | null>(null);
 
   const activeCase = ATTACK_CASES.find((item) => item.id === attackCase) ?? ATTACK_CASES[1];
 
@@ -228,6 +229,23 @@ export default function ConstraintsDemoPage() {
     } finally {
       setAttackBusy(false);
     }
+  }
+
+  async function validateDatasetFile() {
+    if (!datasetFile) return;
+    setAttackBusy(true); setAttackReply(null); setAttackError("");
+    try {
+      const text = (await datasetFile.text()).replace(/^\uFEFF/, "");
+      const isCsv = datasetFile.name.toLowerCase().endsWith(".csv");
+      const body = isCsv
+        ? JSON.stringify({ facility_type: "engineering_college", domain: "energy", csv_data: text, operator_note: "Constraint 4 uploaded dataset" })
+        : `{"facility_type":"engineering_college","domain":"energy","records":${text},"operator_note":"Constraint 4 uploaded dataset"}`;
+      const response = await fetch(INGESTION_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+      let payload: unknown;
+      try { payload = await response.json(); } catch { payload = { message: "Server returned a non-JSON response." }; }
+      setAttackReply({ status: response.status, ok: response.ok, body: payload });
+    } catch (error) { setAttackError(error instanceof Error ? error.message : "Could not read or submit this file."); }
+    finally { setAttackBusy(false); }
   }
 
   function resetConflictDemo() {
@@ -343,6 +361,14 @@ export default function ConstraintsDemoPage() {
             </div>
 
             <label className="block text-sm font-semibold" htmlFor="hostile-case">Choose an input problem to demonstrate</label>
+            <div className="mt-4 rounded-2xl border border-sky-300/20 bg-sky-400/5 p-4">
+              <label htmlFor="dataset-file" className="block text-sm font-semibold">Or upload an energy dataset (.csv or .json)</label>
+              <input id="dataset-file" type="file" accept=".csv,.json,text/csv,application/json" onChange={(event) => { setDatasetFile(event.target.files?.[0] ?? null); setAttackReply(null); setAttackError(""); }} className="mt-3 block w-full text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-400 file:px-3 file:py-2 file:font-bold file:text-slate-950" />
+              {datasetFile && <p className="mt-2 text-xs text-slate-400">Selected: {datasetFile.name}. Invalid files are rejected without applying any rows.</p>}
+              <button type="button" onClick={() => void validateDatasetFile()} disabled={!datasetFile || attackBusy} className="mt-3 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-bold text-slate-950 disabled:opacity-40">{attackBusy ? "Checking dataset…" : "Validate uploaded dataset"}</button>
+              <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold"><a href="/demo-telemetry-valid.csv" download className="text-sky-200 underline">Download valid CSV</a><a href="/demo-telemetry-invalid.csv" download className="text-sky-200 underline">Download invalid CSV</a><a href="/demo-telemetry-valid.json" download className="text-sky-200 underline">Download valid JSON</a><a href="/demo-telemetry-invalid.json" download className="text-sky-200 underline">Download invalid JSON</a></div>
+            </div>
+            <p className="my-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Or use a built-in case</p>
             <select id="hostile-case" value={attackCase} onChange={(event) => { setAttackCase(event.target.value as AttackCase); setAttackReply(null); setAttackError(""); }} className="mt-2 w-full rounded-xl border border-white/10 bg-[#0b1019] px-3 py-3 text-sm text-white outline-none focus:border-sky-300/60">
               {ATTACK_CASES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select>

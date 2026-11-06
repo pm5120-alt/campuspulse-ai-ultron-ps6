@@ -1,0 +1,4 @@
+[
+  {"timestamp":"2026-11-05T09:00:00Z","entity_id":"demo-json-01","kwh":440},
+  {"timestamp":"2026-11-05T10:00:00Z","entity_id":"demo-json-02","kwh":510}
+]
