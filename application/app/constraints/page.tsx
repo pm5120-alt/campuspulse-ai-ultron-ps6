@@ -12,6 +12,7 @@ type ApiReply = {
   status: number;
   ok: boolean;
   body: unknown;
+  uploadedDataset?: boolean;
 };
 
 type Arrival = {
@@ -243,7 +244,7 @@ export default function ConstraintsDemoPage() {
       const response = await fetch(INGESTION_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body });
       let payload: unknown;
       try { payload = await response.json(); } catch { payload = { message: "Server returned a non-JSON response." }; }
-      setAttackReply({ status: response.status, ok: response.ok, body: payload });
+      setAttackReply({ status: response.status, ok: response.ok, body: payload, uploadedDataset: true });
     } catch (error) { setAttackError(error instanceof Error ? error.message : "Could not read or submit this file."); }
     finally { setAttackBusy(false); }
   }
@@ -386,10 +387,10 @@ export default function ConstraintsDemoPage() {
             </button>
 
             {attackReply && (
-              <div aria-live="polite" className={`mt-5 rounded-2xl border p-4 ${hostileRejected ? "border-emerald-300/20 bg-emerald-400/10" : "border-rose-300/20 bg-rose-400/10"}`}>
+              <div aria-live="polite" className={`mt-5 rounded-2xl border p-4 ${hostileRejected ? "border-emerald-300/20 bg-emerald-400/10" : attackReply.uploadedDataset && attackReply.ok ? "border-sky-300/30 bg-sky-400/10" : "border-rose-300/20 bg-rose-400/10"}`}>
                 <div className="flex items-center gap-2 font-bold">
                   {hostileRejected ? <CheckCircle2 className="h-4 w-4 text-emerald-300" /> : <AlertTriangle className="h-4 w-4 text-rose-300" />}
-                  <span>{hostileRejected ? "Rejected safely · no rows applied" : `Unexpected result · HTTP ${attackReply.status}`}</span>
+                  <span>{hostileRejected ? "Rejected safely · no rows applied" : attackReply.uploadedDataset && attackReply.ok ? "Dataset validated successfully" : `Unexpected result · HTTP ${attackReply.status}`}</span>
                 </div>
                 <p className="mt-2 text-sm text-slate-300">HTTP {attackReply.status} · accepted {String(responseDetail(attackReply.body).accepted ?? "—")} · rejected {String(responseDetail(attackReply.body).rejected ?? "—")}</p>
                 <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl bg-black/30 p-3 text-xs leading-5 text-slate-300">{errorSummary(attackReply.body)}</pre>
