@@ -421,30 +421,52 @@ export default function AiInsightsView({
   const [briefingText, setBriefingText] = useState<string | null>(null);
   const [briefingQuery, setBriefingQuery] = useState("");
   const [isCopied, setIsCopied] = useState(false);
-  const [uploadedInsight, setUploadedInsight] = useState<AnomalyInsightItem | null>(null);
+  const [uploadedInsights, setUploadedInsights] = useState<AnomalyInsightItem[]>([]);
+  const [resolvedCriticalIds, setResolvedCriticalIds] = useState<string[]>([]);
 
   useEffect(() => {
     const refresh = () => {
       try {
         const raw = localStorage.getItem("campusiq_active_telemetry");
-        if (!raw) { setUploadedInsight(null); return; }
+        if (!raw) { setUploadedInsights([]); return; }
         const ds = JSON.parse(raw) as { domain?: string; filename?: string; rows?: Record<string, unknown>[]; kpis?: { meanValue?: number; maxValue?: number; unit?: string } };
         const metric = ({ energy: "kwh", water: "litres", waste: "fill_level_kg", aqi: "aqi_index", assets: "vibration_mm_s" } as Record<string,string>)[ds.domain || ""];
-        if (!metric || !Array.isArray(ds.rows) || !ds.rows.length) { setUploadedInsight(null); return; }
-        const vals = ds.rows.map(r => Number(r[metric])).filter(Number.isFinite);
-        const mean = vals.reduce((a,b)=>a+b,0) / Math.max(vals.length,1); const peak = Math.max(...vals);
-        const ratio = mean > 0 ? peak / mean : 0; const isSpike = ratio >= 1.8;
+        if (!metric || !Array.isArray(ds.rows) || !ds.rows.length) { setUploadedInsights([]); return; }
         const domain = ({energy:"Energy",water:"Water",waste:"Waste","aqi":"Air Quality",assets:"Assets"} as Record<string, AnomalyInsightItem["domain"]>)[ds.domain || ""];
-        const entity = String(ds.rows[0].entity_id || ds.rows[0].sensor_id || ds.rows[0].asset_id || "Imported facility");
-        setUploadedInsight({ id:"uploaded-dataset-insight", sector:facilityType as AnomalyInsightItem["sector"], domain, title:`${entity}: ${isSpike ? "High telemetry spike" : "Imported telemetry summary"}`, severity:isSpike?"Critical":"Info", anomaly_type:isSpike?"Load Spike":"Efficiency", description:`${ds.filename || "Imported CSV"}: ${vals.length} readings; peak ${peak.toFixed(1)} ${ds.kpis?.unit || "units"}, mean ${mean.toFixed(1)}.`, timestamp:"Latest CSV import", building_or_node:entity, sparkline_data:vals.slice(-12), root_cause:`Imported dataset ${ds.filename || "CSV"} has peak-to-mean ratio ${ratio.toFixed(2)}.`, recommended_actions:[isSpike?"Review the peak timestamp and compare against the normal operating schedule.":"No high spike detected in the imported sample."], estimated_monthly_savings_inr:0 });
-      } catch { setUploadedInsight(null); }
+        const idField = ({energy:"entity_id",water:"entity_id",waste:"entity_id",aqi:"sensor_id",assets:"asset_id"} as Record<string,string>)[ds.domain || ""];
+        const groups = new Map<string, Record<string, unknown>[]>();
+        for (const row of ds.rows) { const id = String(row[idField] ?? "unknown"); groups.set(id, [...(groups.get(id) || []), row]); }
+        const generated: AnomalyInsightItem[] = [];
+        for (const [entity, rows] of groups) {
+          rows.sort((a,b)=>String(a.timestamp).localeCompare(String(b.timestamp)));
+          const domainMetric = ds.domain === "energy" ? "kw_demand" : ds.domain === "water" ? "flow_rate_lpm" : ds.domain === "waste" ? "capacity_pct" : ds.domain === "aqi" ? "aqi_index" : "vibration_mm_s";
+          const series = rows.map(r=>Number(r[domainMetric] ?? r[metric])).filter(Number.isFinite);
+          let candidate = -1; let baseline = 0; let severity: AnomalyInsightItem["severity"] = "Info"; let type: AnomalyInsightItem["anomaly_type"] = "Efficiency"; let reason = "No configured threshold was breached in this dataset.";
+          for (let i=1;i<series.length;i++) { const prior=series.slice(0,i); const avg=prior.reduce((a,b)=>a+b,0)/prior.length; const value=series[i]; let triggered=false; let critical=false;
+            if(ds.domain==="energy") { triggered=avg>0 && value>=avg*1.3; critical=avg>0 && value>=avg*1.7; type="Load Spike"; }
+            else if(ds.domain==="water") { const hour=Number(String(rows[i]?.timestamp||"").slice(11,13)); triggered=hour<6 && value>=5; critical=hour<6 && value>=20; type="Leakage"; }
+            else if(ds.domain==="waste") { triggered=value>=85; critical=value>=95; type="Threshold Breach"; }
+            else if(ds.domain==="aqi") { triggered=value>=100; critical=value>=200; type="Compliance"; }
+            else { const health=Number(rows[i]?.health_score); triggered=value>=4.5 || (Number.isFinite(health)&&health<50); critical=value>=7 || (Number.isFinite(health)&&health<25); type="Degradation"; }
+            if(triggered){candidate=i;baseline=avg;severity=critical?"Critical":"Warning";reason=`${domainMetric} reached ${value.toFixed(1)} against baseline ${avg.toFixed(1)} at ${String(rows[i].timestamp)}.`;break;}
+          }
+          if(candidate<0) continue;
+          const value=series[candidate]; const savings=ds.domain==="energy"?Math.max(0,value-baseline)*8*30:0;
+          generated.push({id:`upload-${ds.domain}-${entity}-${String(rows[candidate].timestamp)}`,sector:facilityType as AnomalyInsightItem["sector"],domain,title:`${entity}: ${type}`,severity,anomaly_type:type,description:`${ds.filename||"Imported dataset"} · ${domainMetric} ${value.toFixed(1)} ${ds.kpis?.unit||"units"} vs ${baseline.toFixed(1)} baseline.`,timestamp:String(rows[candidate].timestamp),building_or_node:entity,sparkline_data:series.slice(-12),root_cause:reason,recommended_actions:[severity==="Critical"?"Urgent review required. Compare the reading with the source and operating schedule.":"Review this reading against the normal operating schedule."],estimated_monthly_savings_inr:Math.round(savings)});
+        }
+        if (!generated.length) { const vals=ds.rows.map(r=>Number(r[metric])).filter(Number.isFinite); const mean=vals.reduce((a,b)=>a+b,0)/Math.max(vals.length,1); generated.push({id:`upload-${ds.domain}-summary`,sector:facilityType as AnomalyInsightItem["sector"],domain,title:`${ds.filename||"Imported dataset"}: no threshold breaches`,severity:"Info",anomaly_type:"Efficiency",description:`${ds.rows.length} imported rows · mean ${mean.toFixed(1)} ${ds.kpis?.unit||"units"}. No configured anomaly threshold was crossed.`,timestamp:String(ds.rows[ds.rows.length-1]?.timestamp||"Latest import"),building_or_node:"Imported telemetry",sparkline_data:vals.slice(-12),root_cause:"Imported readings were compared against preceding readings and the configured domain thresholds.",recommended_actions:["Continue monitoring against the same threshold rules."],estimated_monthly_savings_inr:0}); }
+        setUploadedInsights(generated);
+        const stored=JSON.parse(localStorage.getItem("campusiq_resolved_critical_ids")||"[]"); setResolvedCriticalIds(Array.isArray(stored)?stored.filter((v):v is string=>typeof v==="string"):[]);
+      } catch { setUploadedInsights([]); }
     };
     refresh(); window.addEventListener("campusiq-telemetry-updated", refresh); window.addEventListener("storage", refresh);
     return () => { window.removeEventListener("campusiq-telemetry-updated", refresh); window.removeEventListener("storage", refresh); };
   }, [facilityType]);
 
   // Filtering Engine
-  const baseInsights = uploadedInsight ? [...SECTOR_INSIGHTS_DATABASE.filter(item => item.domain !== uploadedInsight.domain), uploadedInsight] : SECTOR_INSIGHTS_DATABASE;
+  // Once a dataset has been imported, show only insights derived from that active dataset;
+  // seeded cross-domain examples must not inflate the imported dataset's dashboard totals.
+  const baseInsights = uploadedInsights.length ? uploadedInsights : SECTOR_INSIGHTS_DATABASE;
   const filteredInsights = baseInsights.filter((item) => {
     // 1. Sector filter
     if (selectedSector !== "all" && item.sector !== selectedSector) {
@@ -479,7 +501,7 @@ export default function AiInsightsView({
 
   // KPI Calculations based on filtered results
   const totalFilteredCount = filteredInsights.length;
-  const criticalCount = filteredInsights.filter((i) => i.severity === "Critical").length;
+  const unresolvedCriticalCount = filteredInsights.filter((i) => i.severity === "Critical" && !resolvedCriticalIds.includes(i.id)).length;
   const warningCount = filteredInsights.filter((i) => i.severity === "Warning").length;
   const totalPotentialSavings = filteredInsights.reduce(
     (acc, curr) => acc + (curr.estimated_monthly_savings_inr || 0),
@@ -769,7 +791,7 @@ export default function AiInsightsView({
           </div>
           <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60">
             <span className="text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 tracking-wider">Critical Breaches</span>
-            <div className="text-lg font-black text-rose-700 dark:text-rose-300 mt-0.5">{criticalCount} Urgent</div>
+            <div className="text-lg font-black text-rose-700 dark:text-rose-300 mt-0.5">{unresolvedCriticalCount} Urgent</div>
           </div>
           <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60">
             <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">Early Warnings</span>
@@ -1229,6 +1251,15 @@ export default function AiInsightsView({
                         )}
                       </div>
                     </div>
+                    {isCrit && !resolvedCriticalIds.includes(item.id) && (
+                      <button type="button" onClick={() => {
+                        const next = [...new Set([...resolvedCriticalIds, item.id])];
+                        setResolvedCriticalIds(next);
+                        localStorage.setItem("campusiq_resolved_critical_ids", JSON.stringify(next));
+                      }} className="mt-3 rounded-full border border-rose-300 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40">
+                        Mark urgent breach resolved
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

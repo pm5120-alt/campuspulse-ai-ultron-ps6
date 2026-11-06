@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowDownUp, CheckCircle2, LoaderCircle, Radio, RotateCcw, ShieldCheck } from "lucide-react";
+import { parseTelemetryCsv, validateTelemetryRows } from "../lib/telemetryCsv";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const INGESTION_URL = `${API_BASE_URL}/api/v1/continuous-learning/sync-and-learn`;
@@ -238,12 +239,26 @@ export default function ConstraintsDemoPage() {
     try {
       const text = (await datasetFile.text()).replace(/^\uFEFF/, "");
       const isCsv = datasetFile.name.toLowerCase().endsWith(".csv");
+      const isJson = datasetFile.name.toLowerCase().endsWith(".json");
+      if (!isCsv && !isJson) throw new Error("Select a CSV or JSON energy dataset.");
+      const jsonRows: unknown = isJson ? JSON.parse(text) : null;
+      if (isJson && !validateTelemetryRows("energy", jsonRows)) throw new Error("JSON must be an array of valid energy telemetry records.");
+      const rows = isCsv ? parseTelemetryCsv("energy", text) : jsonRows as ReturnType<typeof parseTelemetryCsv>;
+      const values = rows.map((row) => row.kwh).filter((value): value is number => typeof value === "number");
+      const meanValue = values.reduce((sum, value) => sum + value, 0) / values.length;
+      const std = Math.sqrt(values.reduce((sum, value) => sum + (value - meanValue) ** 2, 0) / values.length);
+      const dataset = { id: `constraint-upload-${Date.now()}`, domain: "energy", sector: "engineering_college", filename: datasetFile.name, uploadDate: new Date().toISOString(), recordCount: rows.length, dateRange: `${rows[0].timestamp} to ${rows[rows.length - 1].timestamp}`, rows, kpis: { meanValue, maxValue: Math.max(...values), minValue: Math.min(...values), unit: "kWh", anomaliesDetected: values.filter((value) => value > meanValue + 1.6 * std).length } };
       const body = isCsv
         ? JSON.stringify({ facility_type: "engineering_college", domain: "energy", csv_data: text, operator_note: "Constraint 4 uploaded dataset" })
-        : `{"facility_type":"engineering_college","domain":"energy","records":${text},"operator_note":"Constraint 4 uploaded dataset"}`;
+        : JSON.stringify({ facility_type: "engineering_college", domain: "energy", records: rows, operator_note: "Constraint 4 uploaded dataset" });
       const response = await fetch(INGESTION_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body });
       let payload: unknown;
       try { payload = await response.json(); } catch { payload = { message: "Server returned a non-JSON response." }; }
+      if (response.ok) {
+        localStorage.setItem("campusiq_active_telemetry", JSON.stringify(dataset));
+        localStorage.setItem("campusiq_latest_model_metrics", JSON.stringify(payload));
+        window.dispatchEvent(new Event("campusiq-telemetry-updated"));
+      }
       setAttackReply({ status: response.status, ok: response.ok, body: payload, uploadedDataset: true });
     } catch (error) { setAttackError(error instanceof Error ? error.message : "Could not read or submit this file."); }
     finally { setAttackBusy(false); }
