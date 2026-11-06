@@ -264,6 +264,7 @@ export default function DataUploadStudioModal({
       setActiveHistory(updated);
       localStorage.setItem("campusiq_uploaded_datasets", JSON.stringify(updated));
       localStorage.setItem("campusiq_active_telemetry", JSON.stringify(parsedDataset));
+      window.dispatchEvent(new Event("campusiq-telemetry-updated"));
       localStorage.setItem("campusiq_latest_model_metrics", JSON.stringify(res));
 
       if (onDatasetApplied) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Zap, Droplets, Trash2, Wind, Wrench, ShieldAlert, ChevronDown, ChevronUp, Check, X, Sparkles, Lightbulb, CheckCircle2, AlertTriangle, Send, Loader2, Copy, Download, FileText, Building, GraduationCap, Factory, Building2, Landmark, Search, Filter, SlidersHorizontal, Activity, Layers } from "lucide-react";
@@ -421,9 +421,31 @@ export default function AiInsightsView({
   const [briefingText, setBriefingText] = useState<string | null>(null);
   const [briefingQuery, setBriefingQuery] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [uploadedInsight, setUploadedInsight] = useState<AnomalyInsightItem | null>(null);
+
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        const raw = localStorage.getItem("campusiq_active_telemetry");
+        if (!raw) { setUploadedInsight(null); return; }
+        const ds = JSON.parse(raw) as { domain?: string; filename?: string; rows?: Record<string, unknown>[]; kpis?: { meanValue?: number; maxValue?: number; unit?: string } };
+        const metric = ({ energy: "kwh", water: "litres", waste: "fill_level_kg", aqi: "aqi_index", assets: "vibration_mm_s" } as Record<string,string>)[ds.domain || ""];
+        if (!metric || !Array.isArray(ds.rows) || !ds.rows.length) { setUploadedInsight(null); return; }
+        const vals = ds.rows.map(r => Number(r[metric])).filter(Number.isFinite);
+        const mean = vals.reduce((a,b)=>a+b,0) / Math.max(vals.length,1); const peak = Math.max(...vals);
+        const ratio = mean > 0 ? peak / mean : 0; const isSpike = ratio >= 1.8;
+        const domain = ({energy:"Energy",water:"Water",waste:"Waste","aqi":"Air Quality",assets:"Assets"} as Record<string, AnomalyInsightItem["domain"]>)[ds.domain || ""];
+        const entity = String(ds.rows[0].entity_id || ds.rows[0].sensor_id || ds.rows[0].asset_id || "Imported facility");
+        setUploadedInsight({ id:"uploaded-dataset-insight", sector:facilityType as AnomalyInsightItem["sector"], domain, title:`${entity}: ${isSpike ? "High telemetry spike" : "Imported telemetry summary"}`, severity:isSpike?"Critical":"Info", anomaly_type:isSpike?"Load Spike":"Efficiency", description:`${ds.filename || "Imported CSV"}: ${vals.length} readings; peak ${peak.toFixed(1)} ${ds.kpis?.unit || "units"}, mean ${mean.toFixed(1)}.`, timestamp:"Latest CSV import", building_or_node:entity, sparkline_data:vals.slice(-12), root_cause:`Imported dataset ${ds.filename || "CSV"} has peak-to-mean ratio ${ratio.toFixed(2)}.`, recommended_actions:[isSpike?"Review the peak timestamp and compare against the normal operating schedule.":"No high spike detected in the imported sample."], estimated_monthly_savings_inr:0 });
+      } catch { setUploadedInsight(null); }
+    };
+    refresh(); window.addEventListener("campusiq-telemetry-updated", refresh); window.addEventListener("storage", refresh);
+    return () => { window.removeEventListener("campusiq-telemetry-updated", refresh); window.removeEventListener("storage", refresh); };
+  }, [facilityType]);
 
   // Filtering Engine
-  const filteredInsights = SECTOR_INSIGHTS_DATABASE.filter((item) => {
+  const baseInsights = uploadedInsight ? [...SECTOR_INSIGHTS_DATABASE.filter(item => item.domain !== uploadedInsight.domain), uploadedInsight] : SECTOR_INSIGHTS_DATABASE;
+  const filteredInsights = baseInsights.filter((item) => {
     // 1. Sector filter
     if (selectedSector !== "all" && item.sector !== selectedSector) {
       return false;
