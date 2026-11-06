@@ -224,6 +224,20 @@ def record_identity(facility_type: str, domain: str, record: dict[str, Any]) -> 
     return json.dumps([facility_type, domain, entity, timestamp], ensure_ascii=False, separators=(",", ":"))
 
 
+def _candidate_values(record: dict[str, Any], fields: set[str], pd: Any) -> dict[str, Any]:
+    values: dict[str, Any] = {}
+    for field in fields:
+        if field not in record:
+            continue
+        value = record[field]
+        if not pd.notna(value):
+            continue
+        if hasattr(value, "item"):
+            value = value.item()
+        values[field] = value
+    return values
+
+
 def merge_batch(existing: pd.DataFrame, records: list[dict[str, Any]], facility_type: str, domain: str, source: str) -> tuple[pd.DataFrame, dict[str, int]]:
     """Merge non-conflicting records; retain the incumbent and report value conflicts."""
     import pandas as pd
@@ -279,8 +293,8 @@ def merge_batch(existing: pd.DataFrame, records: list[dict[str, Any]], facility_
                     "entity_id": record.get(schema["id"]), "timestamp": record.get("timestamp"),
                     "fields": sorted(changed), "retained_source": incumbent.get("_arrival_source", "earlier batch row"),
                     "incoming_source": source, "resolution": "held_for_review",
-                    "retained_record": {field: incumbent[field] for field in set(schema["numeric"]) | schema["text"] if field in incumbent},
-                    "incoming_record": {field: record[field] for field in set(schema["numeric"]) | schema["text"] if field in record},
+                    "retained_record": _candidate_values(incumbent, set(schema["numeric"]) | schema["text"], pd),
+                    "incoming_record": _candidate_values(record, set(schema["numeric"]) | schema["text"], pd),
                 })
             # Keep the first observed record; arrival time alone is not evidence of truth.
             continue
