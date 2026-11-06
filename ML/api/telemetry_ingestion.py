@@ -7,6 +7,7 @@ import json
 import math
 import re
 import unicodedata
+from uuid import uuid4
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
@@ -274,9 +275,12 @@ def merge_batch(existing: pd.DataFrame, records: list[dict[str, Any]], facility_
                        and record[field] != incumbent[field]]
             if changed:
                 conflicts.append({
+                    "conflict_id": str(uuid4()), "record_identity": identity,
                     "entity_id": record.get(schema["id"]), "timestamp": record.get("timestamp"),
                     "fields": sorted(changed), "retained_source": incumbent.get("_arrival_source", "earlier batch row"),
                     "incoming_source": source, "resolution": "held_for_review",
+                    "retained_record": {field: incumbent[field] for field in set(schema["numeric"]) | schema["text"] if field in incumbent},
+                    "incoming_record": {field: record[field] for field in set(schema["numeric"]) | schema["text"] if field in record},
                 })
             # Keep the first observed record; arrival time alone is not evidence of truth.
             continue

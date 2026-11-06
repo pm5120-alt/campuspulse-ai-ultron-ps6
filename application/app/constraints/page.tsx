@@ -150,6 +150,8 @@ export default function ConstraintsDemoPage() {
   const [arrivals, setArrivals] = useState<Arrival[]>([]);
   const [conflictBusy, setConflictBusy] = useState(false);
   const [conflictError, setConflictError] = useState("");
+  const [reviewReason, setReviewReason] = useState("");
+  const [resolvedConflict, setResolvedConflict] = useState("");
   const [attackCase, setAttackCase] = useState<AttackCase>("invalid_timestamp");
   const [attackBusy, setAttackBusy] = useState(false);
   const [attackReply, setAttackReply] = useState<ApiReply | null>(null);
@@ -187,11 +189,30 @@ export default function ConstraintsDemoPage() {
         },
       };
       setArrivals((current) => [...current.filter((arrival) => arrival.source !== source), { source, kwh, reply: recordedReply }]);
+      setResolvedConflict("");
     } catch (error) {
       setConflictError(error instanceof Error ? error.message : "Could not reach the telemetry API.");
     } finally {
       setConflictBusy(false);
     }
+  }
+
+  async function resolveConflict(selectedSource: "Source A" | "Source B") {
+    const conflict = (responseDetail(sourceB?.reply.body).conflicts as Array<{ conflict_id?: string }> | undefined)?.[0];
+    if (!conflict?.conflict_id || reviewReason.trim().length < 5) return;
+    setConflictBusy(true);
+    setConflictError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/telemetry/conflicts/${conflict.conflict_id}/resolve`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selected_source: selectedSource, reason: reviewReason.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(typeof result.detail === "string" ? result.detail : "Could not resolve conflict.");
+      setResolvedConflict(`${result.selected_source} accepted. Review reason recorded; the conflict flag is cleared.`);
+    } catch (error) {
+      setConflictError(error instanceof Error ? error.message : "Could not resolve conflict.");
+    } finally { setConflictBusy(false); }
   }
 
   async function runValidationDemo() {
@@ -293,12 +314,18 @@ export default function ConstraintsDemoPage() {
                     <span className="text-xs text-slate-300">{arrival.reply.status} · {String(responseDetail(arrival.reply.body).duplicates ?? 0)} duplicate · {String(responseDetail(arrival.reply.body).accepted ?? 0)} accepted</span>
                   </div>
                 ))}
-                {sourceB && (
+                {sourceB && !resolvedConflict && (
                   <div className="flex items-start gap-2 border-t border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <p>Conflict detected in <strong>{String((responseDetail(sourceB.reply.body).conflicts as Array<{ fields?: string[] }> | undefined)?.[0]?.fields?.join(", ") ?? "telemetry values")}</strong>. Source A remains stored at <strong>{sourceA?.kwh} kWh</strong>; Source B&apos;s <strong>{sourceB.kwh} kWh</strong> reading was held for review. Arrival order did not decide the truth.</p>
                   </div>
                 )}
+                {sourceB && !resolvedConflict && <div className="border-t border-white/10 p-4">
+                  <label htmlFor="review-reason" className="text-sm font-semibold">Offline verification reason</label>
+                  <textarea id="review-reason" value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} maxLength={500} placeholder="Explain what you checked and why this source is more reliable…" className="mt-2 min-h-20 w-full rounded-xl border border-white/10 bg-black/25 p-3 text-sm outline-none focus:border-amber-300/50" />
+                  <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={conflictBusy || reviewReason.trim().length < 5} onClick={() => void resolveConflict("Source A")} className="rounded-xl border border-white/20 px-3 py-2 text-sm font-bold disabled:opacity-40">Accept Source A · {sourceA?.kwh} kWh</button><button type="button" disabled={conflictBusy || reviewReason.trim().length < 5} onClick={() => void resolveConflict("Source B")} className="rounded-xl bg-amber-400 px-3 py-2 text-sm font-bold text-slate-950 disabled:opacity-40">Accept Source B · {sourceB?.kwh} kWh</button></div>
+                </div>}
+                {resolvedConflict && <p className="border-t border-emerald-300/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">{resolvedConflict}</p>}
               </div>
             )}
             {conflictError && <p role="alert" className="mt-4 whitespace-pre-wrap rounded-xl border border-rose-300/20 bg-rose-400/10 p-3 text-sm text-rose-200">{conflictError}</p>}

@@ -137,6 +137,8 @@ MODELS = {}
 DATASETS = {}
 CL_PIPELINE = None
 TELEMETRY_MERGE_LOCK = threading.RLock()
+PENDING_TELEMETRY_CONFLICTS = {}
+RESOLVED_TELEMETRY_CONFLICTS = []
 
 @app.on_event("startup")
 def load_all_models():
@@ -680,6 +682,8 @@ def sync_and_learn_telemetry(req: SyncAndLearnRequest):
             merged, counts = merge_batch(data_store[req.domain], parsed_records, facility_type, req.domain, upload_source)
             # Single assignment after the complete batch has passed validation.
             data_store[req.domain] = merged
+            for conflict in counts.get("conflicts", []):
+                PENDING_TELEMETRY_CONFLICTS[conflict["conflict_id"]] = {**conflict, "facility_type": facility_type, "domain": req.domain}
     records_count = counts["accepted"]
     active_data = data_store[req.domain]
     metric = {"energy": "kwh", "water": "litres", "waste": "fill_level_kg", "aqi": "aqi_index", "assets": "vibration_mm_s"}[req.domain]
@@ -751,6 +755,34 @@ def sync_and_learn_telemetry(req: SyncAndLearnRequest):
         "learned_insights": [],
         "synced_at": datetime.now().isoformat()
     }
+
+
+class ResolveTelemetryConflictRequest(BaseModel):
+    selected_source: StrictStr
+    reason: StrictStr = Field(..., min_length=5, max_length=500)
+
+
+@app.post("/api/v1/telemetry/conflicts/{conflict_id}/resolve")
+def resolve_telemetry_conflict(conflict_id: str, req: ResolveTelemetryConflictRequest):
+    with TELEMETRY_MERGE_LOCK:
+        conflict = PENDING_TELEMETRY_CONFLICTS.get(conflict_id)
+        if not conflict:
+            raise HTTPException(status_code=404, detail="Pending conflict was not found or was already resolved.")
+        if req.selected_source not in {"Source A", "Source B"}:
+            raise HTTPException(status_code=422, detail="Choose Source A or Source B.")
+        chosen = conflict["retained_record"] if req.selected_source == "Source A" else conflict["incoming_record"]
+        frame = DATASETS[conflict["facility_type"]][conflict["domain"]].copy(deep=True)
+        mask = frame["_record_identity"] == conflict["record_identity"]
+        if not mask.any():
+            raise HTTPException(status_code=409, detail="Stored telemetry changed; review the conflict again.")
+        for field, value in chosen.items():
+            frame.loc[mask, field] = value
+        frame.loc[mask, "_arrival_source"] = req.selected_source
+        DATASETS[conflict["facility_type"]][conflict["domain"]] = frame
+        resolved = {"conflict_id": conflict_id, "selected_source": req.selected_source, "reason": req.reason.strip(), "resolved_at": datetime.now(timezone.utc).isoformat()}
+        RESOLVED_TELEMETRY_CONFLICTS.append(resolved)
+        del PENDING_TELEMETRY_CONFLICTS[conflict_id]
+        return {"status": "resolved", **resolved}
 
 
 # -------------------------------------------------------------
